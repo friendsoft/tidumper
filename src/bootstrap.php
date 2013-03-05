@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * BASIC PHP SETTINGS
+ */
+ini_set('memory_limit', '1024M');
+
+/**
  * AUTOLOAD VENDORS (COMPOSER)
  */
 function includeIfExists($file) {
@@ -19,7 +24,7 @@ if ((!$loader = includeIfExists(__DIR__.'/../vendor/autoload.php'))) {
  */
 $services = new Pimple();
 
-/* CDDB Servers (without "http://") */
+/* CDDB Servers */
 $services['cddb_download_server'] = 'http://ftp.freedb.org/pub/freedb/';
 
 /* data dir */

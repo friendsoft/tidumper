@@ -10,6 +10,7 @@
 .project
 .vim*
 /.settings/
+composer.lock
 composer.phar
 nbproject
 results
