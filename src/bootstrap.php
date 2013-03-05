@@ -3,7 +3,7 @@
 /**
  * BASIC PHP SETTINGS
  */
-ini_set('memory_limit', '1024M');
+ini_set('memory_limit', '128M');
 
 /**
  * AUTOLOAD VENDORS (COMPOSER)

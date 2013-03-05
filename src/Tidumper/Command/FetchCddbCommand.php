@@ -86,7 +86,12 @@ EOT
             $client->setBaseUrl($this->get('cddb_download_server'));
             $response = $client->get($query)->send();
             $stream = $response->getBody();
-            file_put_contents($file, (string) $stream);
+            $stream->rewind();
+            $handle = fopen($file, 'w');
+            if (0 === stream_copy_to_stream($stream->getStream(), $handle)) {
+                throw new \RuntimeException('Stream has not been saved');
+            }
+            fclose($handle);
         }
 
         /* extract archive */
@@ -113,6 +118,7 @@ EOT
             ;
 
         foreach ($finder as $file) {
+            echo $file, PHP_EOL;
             $this->get('filesystem')->mkdir($targetDir . '/' . $file->getRelativePath(), 0777);
             $this->get('filesystem')->copy($file, $targetDir . '/' . $file->getRelativePathname(), true);
         }
