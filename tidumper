@@ -1,10 +1,10 @@
 #!/usr/bin/env php
 <?php
 
-// init services
-$services = require __DIR__ . '/src/bootstrap.php';
+/* init services */
+$services = require(file_exists($file = (__DIR__ . '/src/bootstrap.php')) ? $file : $file . '.dist');
 
-// run console application
+/* run console application */
 $console = new \Tidumper\Console\Console();
 $console->setServices($services)
         ->run()

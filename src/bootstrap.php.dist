@@ -30,6 +30,9 @@ $services['cddb_download_server'] = 'http://ftp.freedb.org/pub/freedb/';
 /* data dir */
 $services['data_dir'] = '~/.tidumper';
 
+/* temp dir (should be different from data dir) */
+$services['temp_dir'] = sys_get_temp_dir();
+
 /* HTTP client that supports RESTful APIs */
 $services['client'] = $services->share(function ($services) {
     return new \Guzzle\Http\Client();
@@ -63,6 +66,12 @@ if (0 === strpos($services['data_dir'], '~')) {
     $services['data_dir'] = substr_replace($services['data_dir'], $_SERVER['HOME'], 0, 1);
 }
 $services['data_dir'] = realpath($services['data_dir']) ?: $services['data_dir'];
+
+/* make temp dir absolute (separated to allow reading param from config or command line later on) */
+if (0 === strpos($services['temp_dir'], '~')) {
+    $services['temp_dir'] = substr_replace($services['temp_dir'], $_SERVER['HOME'], 0, 1);
+}
+$services['temp_dir'] = realpath($services['temp_dir']) ?: $services['temp_dir'];
 
 
 return $services;

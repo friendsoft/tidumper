@@ -1,0 +1,12 @@
+<?php
+
+$services = require('bootstrap.php.dist');
+
+/**
+ * CUSTOMIZE SERVICES
+ */
+
+/* temp dir (should be different from data dir) */
+$services['temp_dir'] = realpath($dir = $_SERVER['HOME'] . '/temp') ?: $dir;
+
+return $services;
