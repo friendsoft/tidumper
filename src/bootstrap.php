@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * AUTOLOAD VENDORS (COMPOSER)
+ */
+function includeIfExists($file) {
+    if (file_exists($file)) {
+        return include $file;
+    }
+}
+if ((!$loader = includeIfExists(__DIR__.'/../vendor/autoload.php'))) {
+    die('You must set up the project dependencies, run the following commands:'.PHP_EOL.
+        'curl -s http://getcomposer.org/installer | php'.PHP_EOL.
+        'php composer.phar install'.PHP_EOL);
+}
+
+/**
+ * REGISTER SERVICES
+ */
+$services = new Pimple();
+
+/* CDDB Servers (without "http://") */
+$services['cddb_download_server'] = 'http://ftp.freedb.org/pub/freedb/';
+
+/* data dir */
+$services['data_dir'] = '~/.tidumper';
+
+/* HTTP client that supports RESTful APIs */
+$services['client'] = $services->share(function ($services) {
+    return new \Guzzle\Http\Client();
+});
+
+/* DOM crawler for parsing HTML */
+$services['crawler'] = function ($services) {
+    return new Symfony\Component\DomCrawler\Crawler();
+};
+
+/* a service to manage files and directories */
+$services['filesystem'] = $services->share(function ($services) {
+    return new Symfony\Component\Filesystem\Filesystem();
+});
+
+/* a service to find files within the file system */
+$services['finder'] = function ($services) {
+    return new \Symfony\Component\Finder\Finder();
+};
+
+/* a service to parse yaml files (for configuration) */
+$services['yaml'] = $services->share(function ($services) {
+    return new \Symfony\Component\Yaml\Parser();
+});
+
+/**
+ * PROCESS PARAMS
+ */
+/* make data dir absolute (separated to allow reading param from config or command line later on) */
+if (0 === strpos($services['data_dir'], '~')) {
+    $services['data_dir'] = substr_replace($services['data_dir'], $_SERVER['HOME'], 0, 1);
+}
+$services['data_dir'] = realpath($services['data_dir']) ?: $services['data_dir'];
+
+
+return $services;

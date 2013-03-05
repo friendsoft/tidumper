@@ -1,0 +1,11 @@
+#!/usr/bin/env php
+<?php
+
+// init services
+$services = require __DIR__ . '/src/bootstrap.php';
+
+// run console application
+$console = new \Tidumper\Console\Console();
+$console->setServices($services)
+        ->run()
+        ;
