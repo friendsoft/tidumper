@@ -79,9 +79,8 @@ EOT
             );
         }
 
-        $file = '/tmp/' . $query;
-
         /* fetch remote file */
+        $file = sys_get_temp_dir() . '/' . $query;
         if (!file_exists($file)) { // TODO use (better) caching
             $client = $this->get('client');
             $client->setBaseUrl($this->get('cddb_download_server'));
@@ -91,17 +90,32 @@ EOT
         }
 
         /* extract archive */
-        $dir = $this->get('data_dir') . '/' . str_replace('.tar.bz2', '', $query);
-        $this->get('filesystem')->mkdir($dir, 0700);
-        chdir($dir);
-        $process = new Process("tar xjvfm $file");
+        $sourceDir = sys_get_temp_dir() . '/' . str_replace('.tar.bz2', '', $query);
+        $this->get('filesystem')->mkdir($sourceDir, 0700);
+        chdir($sourceDir);
+        $process = new Process("tar xjf $file");
         $process->setTimeout(3600);
         $process->run();
         if (!$process->isSuccessful()) {
             throw new \RuntimeException($process->getErrorOutput());
         }
-        //print $process->getOutput();
 
+        /* find files with tango genre, copy from /tmp to data dir */
+        $targetDir = $this->get('data_dir') . '/' . str_replace('.tar.bz2', '', $query);
+        $this->get('filesystem')->mkdir($targetDir, 0777);
+
+        $search = 'DGENRE=Tango';
+        $finder = $this->get('finder');
+        $finder
+            ->files()
+            ->in($sourceDir)
+            ->contains($search)
+            ;
+
+        foreach ($finder as $file) {
+            $this->get('filesystem')->mkdir($targetDir . '/' . $file->getRelativePath(), 0777);
+            $this->get('filesystem')->copy($file, $targetDir . '/' . $file->getRelativePathname(), true);
+        }
     }
 
 }
