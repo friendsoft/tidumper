@@ -36,6 +36,7 @@ EOT
      * Initializes the command just after the input has been validated:
      * - convert year and month to freedb.org URL format
      * - prepare data dir
+     * - check free disk space
      *
      * @param InputInterface  $input  An InputInterface instance
      * @param OutputInterface $output An OutputInterface instance
@@ -52,9 +53,11 @@ EOT
 
         /* prepare data dir */
         $this->get('filesystem')->mkdir($this->get('data_dir'), 0700);
+
+        /* check free disk space (might be lowered when bz2 archives are searched directly) */
+        $this->assertDiskSpace($this->get('temp_dir'), $input->getOption('complete') ? 14000 : 300, $output);
+        $this->assertDiskSpace($this->get('data_dir'), $input->getOption('complete') ? 40 : 4, $output);
     }
-
-
 
     /**
      * run command
@@ -80,7 +83,7 @@ EOT
         }
 
         /* fetch remote file */
-        $file = sys_get_temp_dir() . '/' . $query;
+        $file = $this->get('temp_dir') . '/' . $query;
         if (!file_exists($file)) { // TODO use (better) caching
             $client = $this->get('client');
             $client->setBaseUrl($this->get('cddb_download_server'));
@@ -95,12 +98,14 @@ EOT
         }
 
         /* extract archive */
-        $sourceDir = sys_get_temp_dir() . '/' . str_replace('.tar.bz2', '', $query);
+        $sourceDir = $this->get('temp_dir') . '/' . str_replace('.tar.bz2', '', $query);
         $this->get('filesystem')->mkdir($sourceDir, 0700);
         chdir($sourceDir);
         $process = new Process("tar xjf $file");
         $process->setTimeout(3600);
-        $process->run();
+        $process->run(function ($type, $buffer) {
+            echo ('err' === $type ? 'ERR > ' : 'OUT > ') . $buffer;
+        });
         if (!$process->isSuccessful()) {
             throw new \RuntimeException($process->getErrorOutput());
         }
@@ -109,18 +114,32 @@ EOT
         $targetDir = $this->get('data_dir') . '/' . str_replace('.tar.bz2', '', $query);
         $this->get('filesystem')->mkdir($targetDir, 0777);
 
-        $search = 'DGENRE=Tango';
+        // TODO use command line find and cp directly? (should be way faster)
+        $search = 'DGENRE=Tango'; // TODO add further expressions, move to bootstrap / services
         $finder = $this->get('finder');
         $finder
             ->files()
-            ->in($sourceDir)
+            ->in($sourceDir) // TODO use stream directly (extract on demand only) !
             ->contains($search)
             ;
-
         foreach ($finder as $file) {
-            echo $file, PHP_EOL;
             $this->get('filesystem')->mkdir($targetDir . '/' . $file->getRelativePath(), 0777);
             $this->get('filesystem')->copy($file, $targetDir . '/' . $file->getRelativePathname(), true);
+        }
+        if ($input->getOption('verbose')) {
+            $output->writeln(sprintf('%s files copied to %s', count($finder), $targetDir));
+        }
+    }
+
+    protected function assertDiskSpace($dir, $requiredSpaceMb, OutputInterface $output) {
+        $actualSpaceMb = disk_free_space($dir) / 1024 / 1024;
+        if ($actualSpaceMb < $requiredSpaceMb) {
+            $output->writeln(sprintf(
+                '<warning>Not enough space</warning> Recommended space of %sM is not available on "%s" (%sM)</warning>',
+                round($requiredSpaceMb),
+                $dir,
+                round($actualSpaceMb)
+            ));
         }
     }
 
