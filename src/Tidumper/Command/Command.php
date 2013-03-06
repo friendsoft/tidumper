@@ -6,7 +6,7 @@ use ArrayAccess as ServicesInterface;
 use Symfony\Component\Console\Command\Command as BaseCommand;
 
 /**
- * Base class for tangotagger commands
+ * Base class for tidumper commands
  */
 abstract class Command extends BaseCommand
 {
@@ -76,7 +76,7 @@ abstract class Command extends BaseCommand
     }
 
     /**
-     * whether a servcie or parameter is defined
+     * whether a service or parameter is defined
      *
      * @param string $serviceId
      * @return boolean
